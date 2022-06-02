@@ -140,5 +140,6 @@ dmypy.json
 checkpoints/
 evaluation_results/
 test/
+test_0/
 data/
 runs/
