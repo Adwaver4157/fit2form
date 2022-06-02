@@ -793,3 +793,51 @@ def train_vae(net, hyperparams: dict, train_loader, val_loader,
         checkpoint_path = '{}vae_{:03d}.pth'.format(logger.logdir, epoch)
         net.save(epoch, checkpoint_path)
         print(f'Saved checkpoint to {checkpoint_path}')
+    
+def train_maml_vae(net, hyperparams: dict, train_loader, val_loader,
+              logger: Logger):
+    vae_criternion = MSELoss()
+    optimizer = net.vae_optimizer
+    for epoch in range(net.stats['epochs'], hyperparams['vae_num_epochs']):
+        print("=" * 10 + f"EPOCH {epoch}" + "=" * 10)
+        with tqdm(train_loader, dynamic_ncols=True) as pbar:
+            for batch in pbar:
+                batch = batch.to(net.device, non_blocking=True)
+                vae_loss = vae_criternion(
+                    net.encode_decode(batch),
+                    batch)
+                optimizer.zero_grad()
+                vae_loss.backward()
+                optimizer.step()
+
+                logger.log(
+                    data={
+                        'Training/VAE_Loss': vae_loss.item()
+                    },
+                    step=net.stats['update_steps'])
+                pbar.set_description('Train Loss: {:.04f}'.format(
+                    vae_loss.item()
+                ))
+                net.stats['update_steps'] += 1
+
+        with tqdm(val_loader, dynamic_ncols=True)\
+                as pbar, no_grad():
+            val_losses = []
+            for batch in pbar:
+                batch = batch.to(net.device)
+                vae_loss = vae_criternion(
+                    net.encode_decode(batch),
+                    batch)
+                val_losses.append(vae_loss.item())
+                pbar.set_description('Validation Loss: {:.04f}'.format(
+                    vae_loss.item()
+                ))
+            logger.log(
+                data={
+                    'Validation/VAE_Loss': np.mean(val_losses)
+                },
+                step=epoch)
+            print(f'\rValidation Loss:{np.mean(val_losses)}')
+        checkpoint_path = '{}vae_{:03d}.pth'.format(logger.logdir, epoch)
+        net.save(epoch, checkpoint_path)
+        print(f'Saved checkpoint to {checkpoint_path}')

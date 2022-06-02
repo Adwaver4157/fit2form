@@ -14,7 +14,7 @@ from environment.meshUtils import (
     create_grasp_object_urdf
 )
 from multiprocessing import Pool
-from train import cotrain, train_vae, pretrain, pretrain_gn
+from train import cotrain, train_vae, train_maml_vae, pretrain, pretrain_gn
 from generate_data import (
     create_grasp_objects,
     generate_pretrain_data,
@@ -48,6 +48,8 @@ if __name__ == "__main__":
         cotrain(*setup(args, config))
     elif args.mode == 'vae':
         train_vae(*setup_train_vae(args, config))
+    elif args.mode == 'maml_vae':
+        train_maml_vae(*setup_train_vae(args, config))
     elif args.mode == 'pretrain':
         pretrain(args, config)
     elif args.mode == 'pretrain_gn':
