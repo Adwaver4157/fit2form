@@ -220,4 +220,3 @@ dependencies:
     - urdfpy==0.0.22
     - wcwidth==0.2.5
     - yarl==1.4.2
-prefix: /home/hqh2101/anaconda3

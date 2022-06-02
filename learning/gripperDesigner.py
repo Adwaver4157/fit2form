@@ -9,6 +9,7 @@ from torch.nn import (
 )
 from torch import split, cat, load, save
 from .featureExtractor import Encoder, Decoder
+from .featureExtractor import MAML_Encoder, MAML_Decoder
 from torch.optim import Adam
 from torch.nn.parallel import DistributedDataParallel as DDP
 from .fitnessNet import (
