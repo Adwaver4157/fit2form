@@ -1,4 +1,5 @@
 .vim/
+.devcontainer
 .vscode/
 log.txt
 *.blend
