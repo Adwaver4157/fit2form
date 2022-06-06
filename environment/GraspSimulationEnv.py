@@ -14,7 +14,7 @@ from .recorder import PybulletRecorder
 
 class GraspSimulationEnv(BaseEnv):
 
-    def __init__(self, config: dict, gui: bool = False):
+    def __init__(self, config: dict, gui: bool = False, visualize: bool = False):
         super().__init__(config, gui)
         env_conf = config['environment']
         self.grasp_metrics = env_conf['grasp_metrics']
@@ -65,8 +65,10 @@ class GraspSimulationEnv(BaseEnv):
                         self.robustness_angles)
                 ])
         self.measurement_fns = dict(self.measurement_fns)
-        # self.renderer = MeshRenderer()
-        self.renderer = None
+        if visualize:
+            self.renderer = MeshRenderer()
+        else:
+            self.renderer = None
 
     def compute_finger_grasp_score(self,
                                    left_finger_tsdf,
@@ -134,7 +136,7 @@ class GraspSimulationEnv(BaseEnv):
         if not significantly_base_connected:
             return self.failure_score()
 
-        self.visualize = False
+        self.visualize = visualize
         if visualize:
             visualize_prefix = splitext(gripper_urdf_path)[0]
             visualize_prefix = visualize_prefix[:-8]

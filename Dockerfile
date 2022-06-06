@@ -52,5 +52,9 @@ RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/s
 
 RUN pip install -U numpy
 
+RUN apt-get -y install llvm-6.0
+RUN apt-get install -y libsm6 libxrender1 libfontconfig1 freeglut3-dev
+RUN apt --fix-broken -y install
+
 
 CMD ["/bin/bash"]
