@@ -55,6 +55,6 @@ RUN pip install -U numpy
 RUN apt-get -y install llvm-6.0
 RUN apt-get install -y libsm6 libxrender1 libfontconfig1 freeglut3-dev
 RUN apt --fix-broken -y install
-
+# pip install -U numpy ; apt-get install -y libsm6 libxrender1 libfontconfig1 freeglut3-dev ; apt --fix-broken -y install
 
 CMD ["/bin/bash"]

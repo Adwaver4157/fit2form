@@ -24,12 +24,9 @@ def tqdm_get(task_handles, desc=None, max_results=None):
         max_results = len(task_handles)
     with tqdm(total=max_results, desc=desc, dynamic_ncols=True) as pbar:
         pbar.update(0)
-        while len(task_handles) > 0:
-            for task in task_handles:
-                results.append(task)
-                pbar.update(len(task))
-            if len(results) > max_results:
-                break
+        for task in task_handles:
+            results.append(task)
+            pbar.update(1)
     return results
 
 class test_ObjectDataset(ObjectDataset):
@@ -122,14 +119,14 @@ def test_compute_finger_grasp_score(env,
         if not check_base_connection(right_finger_tsdf)\
                 or not check_base_connection(left_finger_tsdf):
             for grasp_object_urdf_path in grasp_object_urdf_paths:
-                scores.extend({
-                    'score': env.failure_score(),
-                    'base_connected': False,
-                    'created_grippers_failed': None,
-                    'single_connected_component': None,
-                    'grasp_object_path': grasp_object_urdf_path
-                })
-            return scores
+                scores.append(env.failure_score())
+            return {
+                'score': scores,
+                'base_connected': False,
+                'created_grippers_failed': None,
+                'single_connected_component': None,
+                'grasp_object_path': grasp_object_urdf_path
+            }
         # 1. create gripper meshes
         retval = create_gripper(
             left_finger=left_finger_tsdf.squeeze(),
@@ -138,30 +135,31 @@ def test_compute_finger_grasp_score(env,
             voxel_size=env.tsdf_voxel_size)
         if retval is None:
             for grasp_object_urdf_path in grasp_object_urdf_paths:
-                scores.extend({
-                    'score': env.failure_score(),
-                    'base_connected': True,
-                    'created_grippers_failed': True,
-                    'single_connected_component': None,
-                    'grasp_object_path': grasp_object_urdf_path
-                })
+                scores.append(env.failure_score())
+            return {
+                'score': scores,
+                'base_connected': True,
+                'created_grippers_failed': True,
+                'single_connected_component': None,
+                'grasp_object_path': grasp_object_urdf_path
+            }
         gripper_urdf_path, single_connected_component = retval
 
         # 2. simulate the grippers
         for grasp_object_urdf_path in grasp_object_urdf_paths:
-            scores.extend({
-                'score': env.simulate_grasp(
+            scores.append(env.simulate_grasp(
                     grasp_object_urdf_path=grasp_object_urdf_path,
                     gripper_urdf_path=gripper_urdf_path,
                     left_finger_tsdf=left_finger_tsdf,
                     right_finger_tsdf=right_finger_tsdf,
-                    visualize=visualize),
-                'base_connected': True,
-                'created_grippers_failed': False,
-                'single_connected_component': single_connected_component,
-                'grasp_object_path': grasp_object_urdf_path
-            })
-        return scores
+                    visualize=visualize))
+        return {
+            'score': scores,
+            'base_connected': True,
+            'created_grippers_failed': False,
+            'single_connected_component': single_connected_component,
+            'grasp_object_path': grasp_object_urdf_path
+        }
 
 if __name__ == '__main__':
     parser = ArgumentParser('Generator fingers evaluater')
@@ -226,6 +224,7 @@ if __name__ == '__main__':
         print(finger_generator)
         obj_loader = iter(obj_dataset.loader)
         for i, grasp_objects in enumerate(tqdm(obj_loader, smoothing=0.01, dynamic_ncols=True, desc=finger_generator_config["desc"])):
+            print(i)
             retval = finger_generator.create_fingers(
                 grasp_objects)
             gripper_output_paths = ['{}/{:06}'.format(
@@ -250,11 +249,12 @@ if __name__ == '__main__':
                     dicts_get(grasp_objects, 'urdf_path'),
                     gripper_output_paths,
                     [False] * len(gripper_output_paths)):
-                result = test_compute_finger_grasp_score(left, right,
-                                                        value, path, flag)
+                result = test_compute_finger_grasp_score(env, left, right, dicts_get(grasp_objects, 'urdf_path'), path, flag)
                 grasp_results.append(result)
             results.extend(grasp_results)
             metrics = acc_results(results)
+            scores = metrics.reshape((len(grasp_objects), -1))
+            print(scores)
             print_results(metrics, name=finger_generator_config["desc"])
             save_path = os.path.join(grippers_directory, "val_results.npz")
             np.savez(save_path, **metrics)
